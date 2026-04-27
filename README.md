@@ -1,6 +1,6 @@
 # Surgical Instrument Segmentation in Robotic Surgery
 
-Semantic segmentation of surgical instruments in robotic-assisted radical prostatectomy video using CNN and transformer-based deep learning models, reproducing and extending the benchmark from Ameli (2026) on the SAR-RARP50 dataset.
+Surgical instrument segmentation in robotic-assisted surgery is a critical computer vision challenge, yet it remains difficult due to extreme class imbalance, small instrument size, and heavy occlusion. This project asks: **can transformer-based architectures outperform traditional CNNs for this task, and can optimizer selection further improve upon published results?** To answer this, we reproduce and extend the benchmark from Ameli (2026), training and evaluating UNet, Attention UNet, and SegFormer on the SAR-RARP50 dataset of 50 real robotic prostatectomy surgeries with pixel-level segmentation masks across 10 instrument classes.
 
 ---
 
