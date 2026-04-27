@@ -1,0 +1,29 @@
+# SAR-RARP50 Surgical Instrument Segmentation
+# Python 3.10+
+
+# Core deep learning
+torch>=2.1.0
+torchvision>=0.16.0
+
+# Transformer models (SegFormer)
+transformers>=4.40.0
+accelerate>=0.27.0
+
+# Image augmentation
+albumentations>=1.4.0
+opencv-python>=4.9.0
+
+# Numerical / data
+numpy>=1.26.0
+
+# Progress bars
+tqdm>=4.66.0
+
+# Plotting
+matplotlib>=3.8.0
+
+# Utilities
+Pillow>=10.0.0
+
+- pip install opencv-python-headless
+- pip install torch torchvision transformers albumentations tqdm numpy matplotlib accelerate
