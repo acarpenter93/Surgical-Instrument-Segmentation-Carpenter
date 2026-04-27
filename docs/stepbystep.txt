@@ -1,0 +1,178 @@
+WITH 2 GPUS (4 took forever on queue)
+opening environment:
+slurm argument: --gres=gpu:p100:2 (want them to be same type bc easier)
+
+cd /usr/project/xtmp/acc123
+mkdir sar-rarp50
+cd /usr/project/xtmp/acc123/sar-rarp50
+
+source /usr/project/xtmp/acc123/venv/bin/activate
+
+kaggle datasets download -d umarfrq/sar-rarp50-test-set
+unzip sar-rarp50-test-set.zip -d test-set
+
+kaggle datasets download -d umarfrq/sar-rarp50-train-set
+unzip sar-rarp50-train-set.zip -d train-set
+
+/home/users/acc123/InstrumentSegmentationSurgery
+- main folder
+
+check folder structure of downloaded data: 
+# Check train set structure
+ls /usr/project/xtmp/acc123/sar-rarp50/train-set/ | head -20
+
+# Check one video folder
+ls /usr/project/xtmp/acc123/sar-rarp50/train-set/ | grep video | head -3 | xargs -I{} ls /usr/project/xtmp/acc123/sar-rarp50/train-set/{}
+
+# Count total segmentation masks
+find /usr/project/xtmp/acc123/sar-rarp50/train-set/ -name "*.png" -path "*/segmentation/*" | wc -l
+
+# Total size
+du -sh /usr/project/xtmp/acc123/sar-rarp50/
+
+had split videos -- determine which are split:
+ls /usr/project/xtmp/acc123/sar-rarp50/train-set/ | grep video
+ls /usr/project/xtmp/acc123/sar-rarp50/test-set/ | grep video
+
+running data preprocess: 
+pip install opencv-python tqdm numpy
+cd /home/users/acc123/InstrumentSegmentationSurgery
+python preprocess_sar_rarp50.py --verify
+
+running dataset:
+pip install albumentations torch torchvision opencv-python
+    install dependencies
+python dataset.py --processed_dir ./processed --batch_size 4 --visualize
+
+
+cat /home/users/acc123/InstrumentSegmentationSurgery/processed/dataset_stats.json | python -m json.tool | grep -A3 "split_ratios"
+nvidia-smi --list-gpus
+ls /home/users/acc123/InstrumentSegmentationSurgery/
+
+cd /home/users/acc123/InstrumentSegmentationSurgery
+segformer (paper settings, Adam):
+CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 train.py \
+    --model segformer \
+    --optimizer adam \
+    --lr 1e-4 \
+    --segformer_backbone nvidia/mit-b2 \
+    --processed_dir /home/users/acc123/InstrumentSegmentationSurgery/processed \
+    --output_dir /home/users/acc123/InstrumentSegmentationSurgery/runs \
+    --num_workers 2 --batch_size 4 --img_size 384 --epochs 10
+    
+open second terminal to monitor:
+watch -n 2 nvidia-smi
+tail -f /home/users/acc123/InstrumentSegmentationSurgery/runs/segformer_adamw_*/training_curves.json
+or 
+watch -n 30 'cat /home/users/acc123/InstrumentSegmentationSurgery/runs/segformer_adamw_*/training_curves.json | python -m json.tool | tail -20'
+watch -n 5 nvidia-smi
+
+
+U-Net:
+CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 train.py \
+    --model unet --optimizer adam --lr 1e-4 \
+    --processed_dir /home/users/acc123/InstrumentSegmentationSurgery/processed \
+    --output_dir /home/users/acc123/InstrumentSegmentationSurgery/runs \
+    --num_workers 2 --batch_size 4 --img_size 384 --epochs 10
+    
+Attention U-Net:
+CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 train.py \
+    --model attention_unet --optimizer adam --lr 1e-4 \
+    --processed_dir /home/users/acc123/InstrumentSegmentationSurgery/processed \
+    --output_dir /home/users/acc123/InstrumentSegmentationSurgery/runs \
+    --num_workers 2 --batch_size 4 --img_size 384 --epochs 10
+    
+Segformer Adam W:
+CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 train.py \
+    --model segformer --optimizer adamw --lr 1e-4 \
+    --processed_dir /home/users/acc123/InstrumentSegmentationSurgery/processed \
+    --output_dir /home/users/acc123/InstrumentSegmentationSurgery/runs \
+    --num_workers 2 --batch_size 4 --img_size 384 --epochs 10
+   
+   
+Segformer CE only (ablation):
+CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 train.py \
+    --model segformer --optimizer adamw --lr 1e-4 \
+    --ce_weight 1.0 --dice_weight 0.0 \
+    --processed_dir /home/users/acc123/InstrumentSegmentationSurgery/processed \
+    --output_dir /home/users/acc123/InstrumentSegmentationSurgery/runs \
+    --num_workers 2 --batch_size 4 --img_size 384 --epochs 10
+    
+segformer frozen (ablation):
+CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 train.py \
+    --model segformer --optimizer adamw --lr 1e-4 \
+    --freeze_encoder \
+    --processed_dir /home/users/acc123/InstrumentSegmentationSurgery/processed \
+    --output_dir /home/users/acc123/InstrumentSegmentationSurgery/runs \
+    --num_workers 2 --batch_size 4 --img_size 384 --epochs 10
+
+
+EVALUATION: (not using 2 gpus for this because not necessary and i don't want to wait for queue)
+Full comparison:
+CUDA_VISIBLE_DEVICES=0 python evaluate.py --mode compare \
+    --run_dirs \
+        runs/segformer_adam_20260425_145213 \
+        runs/unet_adam_20260425_192950 \
+        runs/attention_unet_adam_20260425_212603 \
+        runs/segformer_adamw_20260426_012354 \
+        runs/segformer_adamw_20260426_030932 \
+        runs/segformer_adamw_20260426_045354 \
+    --processed_dir /home/users/acc123/InstrumentSegmentationSurgery/processed \
+    --output_dir /home/users/acc123/InstrumentSegmentationSurgery/comparison \
+    --batch_size 4 --num_workers 2
+
+Training curves for all runs:
+for dir in runs/*/; do
+    CUDA_VISIBLE_DEVICES=0 python evaluate.py --mode curves \
+        --run_dir "$dir"
+done
+
+Failure analysis on best model:
+CUDA_VISIBLE_DEVICES=0 python evaluate.py --mode failures \
+    --run_dir runs/segformer_adamw_20260426_012354 \
+    --processed_dir /home/users/acc123/InstrumentSegmentationSurgery/processed \
+    --batch_size 4 --num_workers 2
+
+more eval: 
+cd /home/users/acc123/InstrumentSegmentationSurgery
+PROCESSED="/home/users/acc123/InstrumentSegmentationSurgery/processed"
+
+for dir in runs/*/; do
+    echo "Evaluating: $dir"
+    CUDA_VISIBLE_DEVICES=0 python evaluate.py --mode eval \
+        --run_dir "$dir" \
+        --processed_dir $PROCESSED \
+        --batch_size 4 --num_workers 2
+done
+
+wanted dice coeff, pixel accuracy bar charts and example image-predcited segmentation pars, so made evaluate2.py. to run:
+step1-dice,pixel charts:
+cd /home/users/acc123/InstrumentSegmentationSurgery
+CUDA_VISIBLE_DEVICES=0 python evaluate2.py --mode per_class \
+    --run_dirs \
+        runs/segformer_adam_20260425_145213 \
+        runs/unet_adam_20260425_192950 \
+        runs/attention_unet_adam_20260425_212603 \
+        runs/segformer_adamw_20260426_012354 \
+        runs/segformer_adamw_20260426_030932 \
+        runs/segformer_adamw_20260426_045354 \
+    --output_dir comparison2
+    
+    
+step2-predication examples:
+CUDA_VISIBLE_DEVICES=0 python evaluate2.py --mode predict \
+    --run_dirs \
+        runs/segformer_adam_20260425_145213 \
+        runs/unet_adam_20260425_192950 \
+        runs/attention_unet_adam_20260425_212603 \
+        runs/segformer_adamw_20260426_012354 \
+        runs/segformer_adamw_20260426_030932 \
+        runs/segformer_adamw_20260426_045354 \
+    --processed_dir /home/users/acc123/InstrumentSegmentationSurgery/processed \
+    --output_dir comparison2 \
+    --n_samples 5
+
+note:
+segformer_adamw_20260426_012354 SegFormer --> AdamW (improvement)
+segformer_adamw_20260426_030932SegFormer --> CE only (ablation)
+segformer_adamw_20260426_045354SegFormer --> frozen (ablation)

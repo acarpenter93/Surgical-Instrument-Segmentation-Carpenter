@@ -1,0 +1,9 @@
+compute cluster - interactive apps - jupyter lab settings:
+GPUs: 0 (put in slurm arguments)
+CPU RAM: 50G
+Cores: 4
+Hours: 12
+slurm arguments: --gres=gpu:p100:2
+
+nvidia-smi --list-gpus   # confirm all 4 are visible
+torchrun --nproc_per_node=4 train.py --model segformer --optimizer adamw
