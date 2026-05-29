@@ -50,13 +50,6 @@ See [SETUP.md](SETUP.md) for full instructions.
 
 ---
 
-## Video Links
-
-- **Demo Video:** https://drive.google.com/file/d/1EBB6CWNpgzeX2slxdqQxXCbf5sGG_S-A/view?usp=drive_link
-- **Technical Walkthrough:** https://drive.google.com/file/d/1HmuwFe3bU86C-RM5Pof2U5B2Qjx6X4iS/view?usp=sharing 
-
----
-
 ## Evaluation
 
 All models trained with: batch size 4, 384×384 resolution, 10 epochs, lr=1e-4.
@@ -171,6 +164,3 @@ Solo project — all work completed individually.
 └── requirements.txt
 ```
 
-
-## Attribution:
-Generative AI was utilized to improve visualization of this file.
