@@ -206,6 +206,3 @@ python evaluate2.py --mode predict \
 - All outputs (checkpoints, curves, plots) are saved to the `runs/` directory under a timestamped folder
 - If you do not have a GPU, set `--num_workers 0` and expect significantly slower training
 
-
-## Attributions
-Generative AI was utilized to help modify this file into a format with better visualization.
