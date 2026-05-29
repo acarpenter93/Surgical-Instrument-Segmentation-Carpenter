@@ -74,7 +74,3 @@ Reproduced experimental setup: Adam optimizer, lr=1e-4, batch size 4, 384×384 r
 - **SegFormer:** Xie, E., et al. (2021). SegFormer: Simple and Efficient Design for Semantic Segmentation with Transformers. *NeurIPS*.
 - **Dice Loss:** Milletari, F., Navab, N., & Ahmadi, S. A. (2016). V-Net: Fully Convolutional Neural Networks for Volumetric Medical Image Segmentation. *3DV*.
 - **AdamW:** Loshchilov, I., & Hutter, F. (2019). Decoupled Weight Decay Regularization. *ICLR*.
-
-
-## Attributions
-Generative AI was utilized to help modify this file into a format with better visualization.
